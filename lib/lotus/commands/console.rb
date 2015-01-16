@@ -55,7 +55,19 @@ module Lotus
           ENGINES.fetch(engine) {
             raise ArgumentError.new("Unknown console engine: #{ engine }")
           }
-        )
+        ).tap { |e| enable_command_history(e) if e.name == 'IRB' }
+      end
+
+      def enable_command_history(engine)
+        IRB.module_eval do
+          singleton_class.send(:alias_method, :orig_setup, :setup)
+
+          def IRB.setup(ap_path)
+            IRB.orig_setup(ap_path)
+            IRB.conf[:SAVE_HISTORY] = 1000
+            IRB.conf[:HISTORY_FILE] = "#{ENV['HOME']}/.irb-lotus-history"
+          end
+        end
       end
     end
   end
